@@ -11,11 +11,11 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,30 +25,54 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import org.elisabethhuhn.networkexample.logger.Logger
-import org.elisabethhuhn.networkexample.util.formatCurrentTimestamp
-
+import org.elisabethhuhn.networkexample.logger.LoggerState
+import org.elisabethhuhn.networkexample.model.loggermodel.LoggingMsgSeverity
 
 @Composable
-fun MainScreen(logger: Logger) {
+fun MainScreenRoute(
+    logger: Logger,
+    viewModel: MainViewMode,
+    onBackClick: () -> Unit
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    MainScreen(
+        logger = logger,
+        state = state,
+        onAction = { action ->
+            when(action) {
+                is MainAction.OnBackClick -> onBackClick()
+                else -> Unit
+            }
+            viewModel.onAction(action)
+        }
+    )
+}
 
-    //Normally this state info would be in the viewModel, but for this abbreviated architecture it is here
-    var showContent by remember { mutableStateOf(false) }
+@Composable
+fun MainScreen(
+    logger: Logger,
+    state: MainState,
+    onAction: (MainAction) -> Unit
+) {
 
-    var currentTimestamp by remember { mutableStateOf("NO TIMESTAMP YET") }
-    var logCounter by remember { mutableIntStateOf(0) }
-    var numberToGenerate by remember { mutableIntStateOf(1) }
-
-    val loggerState by logger.loggerState.collectAsStateWithLifecycle()
-
-    var severity by remember {
-        mutableStateOf("NOT ASSIGNED")
-    }
-    var message by remember {
-        mutableStateOf("NO MESSAGE YET")
-    }
+    var showContent by rememberSaveable { mutableStateOf(false) }
 
     //End of presentation state
     val scope = rememberCoroutineScope()
+
+    //set up mechanism to pass the logger result state back to the viewmodel
+    val firstTime by rememberSaveable { mutableStateOf(true) }
+
+    // define lambda that will pass the Logger result state back to this viewmodel
+    fun passResultState() : (LoggerState) -> Unit = { result ->
+        onAction(MainAction.ReportLoggingResult(result))
+    }
+
+    //initialize the logger to return result state
+    LaunchedEffect(firstTime) {
+        MainAction.UpdateLogger(logger)
+        logger.setReportResult(passResultState())
+    }
 
     Column(
         Modifier.fillMaxWidth(),
@@ -58,20 +82,9 @@ fun MainScreen(logger: Logger) {
         Spacer(modifier = Modifier.height(80.dp))
 
         OutlinedTextField(
-            value = if (loggerState.bufferDuration > 0) loggerState.bufferDuration.toString() else "",
+            value = if (state.loggerState.bufferDuration > 0) state.loggerState.bufferDuration.toString() else "",
             onValueChange = { enteredDuration : String ->
-                //Normally we would call an action in the ViewModel to respond to this user trigger
-                if (enteredDuration != "") {
-                    try{
-                        val bufferDuration = enteredDuration.toLong()
-                        logger.setBufferDuration(bufferDuration)
-                    } catch (e: NumberFormatException) {
-                        logger.setBufferDuration(0)
-                    }
-                } else {
-                    logger.setBufferDuration(0)
-                }
-                //end of user action
+               MainAction.UpdateLoggerBufferDuration(enteredDuration)
             },
             label = {
                 Text(
@@ -83,18 +96,9 @@ fun MainScreen(logger: Logger) {
 
         Spacer(modifier = Modifier.height(15.dp))
         OutlinedTextField(
-            value = if (loggerState.bufferLength == 0) "" else loggerState.bufferLength.toString() ,
+            value = if (state.loggerState.bufferLength == 0) "" else state.loggerState.bufferLength.toString() ,
             onValueChange = { enteredLength : String ->
-                if (enteredLength != "") {
-                    try{
-                        val bufferLength = enteredLength.toInt()
-                        logger.setBufferLength(bufferLength)
-                    } catch (e: NumberFormatException) {
-                        logger.setBufferLength(0)
-                    }
-                } else {
-                    logger.setBufferLength(0)
-                }
+               MainAction.UpdateLoggerBufferLength(enteredLength)
             },
             label = {
                 Text(
@@ -106,17 +110,9 @@ fun MainScreen(logger: Logger) {
         Spacer(modifier = Modifier.height(15.dp))
 
         OutlinedTextField(
-            value = if (numberToGenerate > 0) numberToGenerate.toString() else "",
+            value = if (state.numberToGenerate > 0) state.numberToGenerate.toString() else "",
             onValueChange = { enteredNumToGen : String ->
-                numberToGenerate = if (enteredNumToGen != "") {
-                    try{
-                        enteredNumToGen.toInt()
-                    } catch (e: NumberFormatException) {
-                        0
-                    }
-                } else {
-                    0
-                }
+                onAction(MainAction.NumberToGenerateChanged(enteredNumToGen))
             },
             label = {
                 Text(
@@ -133,22 +129,25 @@ fun MainScreen(logger: Logger) {
                 //In a normal architecture, this would be hidden behind a ViewModel action
                 // that calls a repository function
                 var genCounter = 0
-                while (genCounter < numberToGenerate) {
+                while (genCounter < state.numberToGenerate) {
                     showContent = !showContent
                     genCounter++
-                    logCounter++
-                    currentTimestamp = formatCurrentTimestamp()
-                    severity = when {
-                            logCounter % 2 == 0 -> "INFO"
-                            logCounter % 3 == 0 -> "ERROR"
-                            logCounter % 5 == 0 -> "WARN"
-                            else -> "DEBUG"
-                        }
-                    message = "Log message $logCounter"
+                    onAction(MainAction.IncrLogCounter)
+                    onAction(MainAction.SetCurrentTimestamp)
 
+                    //build a log message
+                    val severity = when {
+                        state.logCounter % 2 == 0 -> LoggingMsgSeverity.INFO
+                        state.logCounter % 3 == 0 -> LoggingMsgSeverity.ERROR
+                        state.logCounter % 5 == 0 -> LoggingMsgSeverity.WARNING
+                        else -> LoggingMsgSeverity.DEBUG
+                    }
+                    val message = "Log message ${state.logCounter}"
+
+                    //send the log message
                     logger.run {
                         val msg = message
-                        val sev = severity
+                        val sev = severity.toString()
                         scope.launch {
                             log(msg = msg, severity = sev)
                         }
@@ -192,15 +191,15 @@ fun MainScreen(logger: Logger) {
         )
 
         Text(
-            text = "severity = $severity",
+            text = "severity = ${state.severity}",
             style = MaterialTheme.typography.h6,
         )
         Text(
-            text = "Timestamp = $currentTimestamp",
+            text = "Timestamp = ${state.currentTimestamp}",
             style = MaterialTheme.typography.h6,
         )
         Text(
-            text = message,
+            text = state.message,
             style = MaterialTheme.typography.h6,
         )
         Spacer(modifier = Modifier.height(10.dp))
@@ -212,15 +211,15 @@ fun MainScreen(logger: Logger) {
         Spacer(modifier = Modifier.height(10.dp))
 
 
-        if (loggerState.requestResult.isNotEmpty()) {
+        if (state.loggerState.requestResult.isNotEmpty()) {
             Text(
-                text = loggerState.requestResult,
+                text = state.loggerState.requestResult,
                 style = MaterialTheme.typography.h6,
             )
         }
-        if (loggerState.errorResult.isNotEmpty()) {
+        if (state.loggerState.errorResult.isNotEmpty()) {
             Text(
-                text = loggerState.errorResult,
+                text = state.loggerState.errorResult,
                 style = MaterialTheme.typography.h6,
                 color = MaterialTheme.colors.error
             )
@@ -228,12 +227,14 @@ fun MainScreen(logger: Logger) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        if (loggerState.lastBufferMessage.isNotEmpty()) {
+        if (state.loggerState.lastBufferMessage.isNotEmpty()) {
             Text(
-                text = loggerState.lastBufferMessage,
+                text = state.loggerState.lastBufferMessage,
                 style = MaterialTheme.typography.h6,
                 color = Color.Blue
             )
         }
     }
 }
+
+

@@ -4,5 +4,6 @@ enum class LoggingMsgSeverity {
     DEBUG,
     INFO,
     WARNING,
-    ERROR
+    ERROR,
+    NOT_ASSIGNED
 }

@@ -13,7 +13,7 @@ androidx-material = "1.12.0"
 androidx-test-junit = "1.2.1"
 compose-multiplatform = "1.7.0"
 junit = "4.13.2"
-kotlin = "2.1.0"
+kotlin = "2.1.10"
 kotlinx-coroutines = "1.10.1"
 navigationCompose = "2.8.0-alpha10"
 kotlinxSerializationJson = "1.8.0"
@@ -25,6 +25,7 @@ kotlinxDatetime = "0.6.2"
 #media3CommonKtx = "1.5.1"
 
 ksp = "2.1.10-1.0.29"
+lifecycleViewmodelAndroid = "2.8.7"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -71,6 +72,7 @@ ktor-server-request-validation = { module = "io.ktor:ktor-server-request-validat
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor" }
 ktor-server-netty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor" }
+androidx-lifecycle-viewmodel-android = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-android", version.ref = "lifecycleViewmodelAndroid" }
 #androidx-media3-common-ktx = { group = "androidx.media3", name = "media3-common-ktx", version.ref = "media3CommonKtx" }
 #ktor-server-tests = { module = "io.ktor:ktor-server-tests-jvm", version.ref = "ktor" }
 

@@ -23,7 +23,6 @@ val sharedModule = module {
     singleOf(::DefaultBookRepository).bind<BookRepository>()
 
 
-    single { get<FavoriteBookDatabase>().favoriteBookDao }
 
     viewModelOf(::BookListViewModel)
     viewModelOf(::BookDetailViewModel)

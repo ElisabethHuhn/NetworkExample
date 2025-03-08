@@ -1,20 +1,25 @@
 package org.elisabethhuhn.networkexample.logger
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.elisabethhuhn.networkexample.model.loggermodel.LogEntry
 import org.elisabethhuhn.networkexample.model.loggermodel.LogEntryBuffer
 import org.elisabethhuhn.networkexample.networking.LoggingClient
 import org.elisabethhuhn.networkexample.util.formatCurrentTimestamp
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.elisabethhuhn.networkexample.util.onError
 import org.elisabethhuhn.networkexample.util.onSuccess
 
 class Logger (loggingClient: LoggingClient){
+    //TODO this needs to be thread safe . For now just a KLUGE
+    lateinit var reportResult : (LoggerState) -> Unit
+    fun setReportResult(reportResult: (LoggerState) -> Unit) {
+        this.reportResult = reportResult
+    }
+
     private val _loggerState = MutableStateFlow<LoggerState>(LoggerState())
-    val loggerState = _loggerState.asStateFlow()
+//    val loggerState = _loggerState.asStateFlow()
 
     //    private val platform = getPlatform()
     private val logEntryBuffer = LogEntryBuffer()
@@ -24,9 +29,11 @@ class Logger (loggingClient: LoggingClient){
 
     fun setBufferLength(length: Int) {
         _loggerState.update { it.copy(bufferLength = length) }
+        reportResult(_loggerState.value)
     }
     fun setBufferDuration(duration: Long) {
         _loggerState.update { it.copy(bufferDuration = duration) }
+        reportResult(_loggerState.value)
     }
 
     private var client = loggingClient
@@ -41,7 +48,7 @@ class Logger (loggingClient: LoggingClient){
         logEntryBuffer.entries.add(currentLogEntry)
 
         if ((logEntryBuffer.entries.isNotEmpty()) &&
-            (logEntryBuffer.entries.size >= loggerState.value.bufferLength)
+            (logEntryBuffer.entries.size >= _loggerState.value.bufferLength)
         ) {
             flushBuffer()
         }
@@ -72,11 +79,13 @@ class Logger (loggingClient: LoggingClient){
                 _loggerState.update {
                     it.copy(requestResult = resultString)
                 }
+                reportResult(_loggerState.value)
             }
             .onError { errorMessage ->
                 _loggerState.update {
                     it.copy(errorResult = errorMessage.toString())
                 }
+                reportResult(_loggerState.value)
             }
     }
 }
