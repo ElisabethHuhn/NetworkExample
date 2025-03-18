@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
+//    alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
@@ -39,11 +40,15 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
 
+            //koin di
             implementation(libs.koin.android)
             implementation(libs.koin.androidx.compose)
+
+            //ktor client for android
             implementation(libs.ktor.client.okhttp)
         }
         commonMain.dependencies {
+            implementation(projects.shared)
 
             implementation(compose.runtime)
             implementation(compose.foundation)
@@ -51,26 +56,32 @@ kotlin {
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
+            implementation(libs.jetbrains.compose.navigation)
+
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
-
-            implementation(projects.shared)
-
-            implementation(libs.jetbrains.compose.navigation)
-            implementation(libs.kotlinx.serialization.json)
 
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
             api(libs.koin.core)
 
-            implementation(libs.bundles.ktor)
+            //serialization
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.ktor.serialization.kotlinx.json)
+
+            //this bundle is client side dependencies
+            implementation(libs.bundles.ktor.client)
         }
         nativeMain.dependencies {
+            //ktor client engine for ios
             implementation(libs.ktor.client.darwin)
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
+
+            //ktor client engine for desktop
+            implementation(libs.ktor.client.okhttp)
         }
     }
 }

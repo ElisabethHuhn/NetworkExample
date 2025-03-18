@@ -16,23 +16,24 @@ kotlin {
         }
     }
     
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
+//    iosX64()
+//    iosArm64()
+//    iosSimulatorArm64()
     
     jvm()
     
     sourceSets {
-        androidMain.dependencies {
-            implementation(libs.ktor.client.okhttp)
-        }
+
         commonMain.dependencies {
             // put your Multiplatform dependencies here
             implementation(libs.kotlinx.datetime)
-            implementation(libs.bundles.ktor)
-        }
-        nativeMain.dependencies {
-            implementation(libs.ktor.client.darwin)
+
+            implementation(libs.bundles.ktor.client)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.kotlinx.serialization.json)
+
+
+            api(libs.koin.core)
         }
     }
 }
@@ -48,8 +49,5 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
     }
 }
-//dependencies {
-//    implementation(libs.androidx.lifecycle.viewmodel.android)
-//    implementation(libs.androidx.lifecycle.viewmodel)
-//}
+
 

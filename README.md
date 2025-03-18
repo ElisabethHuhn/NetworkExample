@@ -23,7 +23,24 @@ Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-mu
 # Introduction
 
 This project is an example of a Kotlin Multiplatform project that uses Compose for the UI. 
-The main purpose is to gain experience building a REST app based on Ktor that has both a client side and a server side.
+The main purpose of this project is to gain experience:
+* building a Kotlin Multiplatform project
+* building a REST app based on Ktor 
+* that has both a client side and a server side.
+
+# Architecture images
+
+## Ktor Clean Code Architecture
+
+![Clean Code Architecture](images/ktor_clean_code_architecture.png)
+
+## Ktor Client Calls
+
+![Kotlin Ktor Client Calls](images/ktor_client_calls.png)
+
+# Requirements
+* Include a logger module that can be reused in other projects
+* Include some problem domain concept model, eg sensor data
 
 # Architecture Notes
 The project uses State of the Art Android Architecture circa 2025. It uses:
