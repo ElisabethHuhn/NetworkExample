@@ -2,14 +2,18 @@ package org.elisabethhuhn.networkexample
 
 
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.*
-import io.ktor.server.http.content.*
+import io.ktor.server.application.Application
+import io.ktor.server.http.content.staticResources
 import io.ktor.server.request.contentLength
 import io.ktor.server.request.receive
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import org.elisabethhuhn.networkexample.logger.data.LogEntryDto
-import org.elisabethhuhn.networkexample.logger.domain.LoggingMsgSeverity
+import io.ktor.server.response.respond
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.route
+import io.ktor.server.routing.routing
+import org.elisabethhuhn.networkexample.log.data.LogEntryDto
+import org.elisabethhuhn.networkexample.log.domain.LoggingMsgSeverity
 
 
 val logEntryStorage = mutableListOf<LogEntryDto>()
@@ -39,20 +43,24 @@ fun Application.configureRouting() {
             }
 
             post {
-                when {
-                    //check if the request body is empty
-                    call.request.contentLength() == 0L -> call.respondText("Request body is empty", status = HttpStatusCode.BadRequest)
+                if (call.request.contentLength() == 0L) {
+                    call.respondText("Request body is empty", status = HttpStatusCode.BadRequest)
+                } else {
+//                    val rawJson = call.receiveText()
 
-                    // get the json from the request
-                    !call.request.content.isJson() ->
-                        call.respondText("Request body must be json", status = HttpStatusCode.BadRequest)
-
-                    //validate top level json is a list
-                    call.request.content.isJsonArray() -> call.respondText("Request body must be an array of log entries", status = HttpStatusCode.BadRequest)
-
-                    //parse the json into a list of LogEntry objects
-                    else -> {
-                        val logEntries = call.receive<List<LogEntryDto>>()
+                    val logEntries: List<LogEntryDto>? = try {
+                        call.receive<List<LogEntryDto>>()
+                    } catch (e: Exception) {
+                        null
+                    }
+                    if (logEntries == null) {
+                        call.respondText("Invalid JSON format", status = HttpStatusCode.BadRequest)
+                    } else {
+                        if (logEntries.isEmpty())
+                            call.respondText(
+                                "No log entries found",
+                                status = HttpStatusCode.BadRequest
+                            )
 
                         //validate the LogEntry objects
                         val invalidEntries = logEntries.filter { logEntry ->
@@ -61,39 +69,66 @@ fun Application.configureRouting() {
                                     logEntry.timestamp == null
                         }
                         if (invalidEntries.isNotEmpty()) {
-                            call.respondText("Missing required fields: ${invalidEntries.joinToString { it.message.toString() }}", status = HttpStatusCode.BadRequest)
+                            call.respondText(
+                                "Missing required fields: ${invalidEntries.joinToString { it.message.toString() }}",
+                                status = HttpStatusCode.BadRequest
+                            )
                         }
 
                         val invalidSeverity = logEntries.filter { logEntry ->
                             isSeverityValid(logEntry.severity ?: "")
                         }
                         if (invalidSeverity.isNotEmpty()) {
-                            call.respondText("Invalid severity level. Must be one of: ${LoggingMsgSeverity.entries.joinToString()}", status = HttpStatusCode.BadRequest)
+                            call.respondText(
+                                "Invalid severity level. Must be one of: ${LoggingMsgSeverity.entries.joinToString()}",
+                                status = HttpStatusCode.BadRequest
+                            )
                         }
 
-                        val invalidTimestamp = logEntries.filter { isTimestampValid(it.timestamp)}
+                        val invalidTimestamp = logEntries.filter { isTimestampValid(it.timestamp) }
                         if (invalidTimestamp.isNotEmpty()) {
-                            call.respondText("Invalid timestamp format", status = HttpStatusCode.BadRequest)
+                            call.respondText(
+                                "Invalid timestamp format",
+                                status = HttpStatusCode.BadRequest
+                            )
                         }
 
                         //store the log entries in the database
                         logEntries.forEach { logEntryStorage.add(it) }
 
                         //respond with a success message
-                        call.respondText("Log entries stored successfully", status = HttpStatusCode.OK)
+                        call.respondText(
+                            "Log entries stored successfully",
+                            status = HttpStatusCode.OK
+                        )
                     }
                 }
             }
         }
+    }
+}
 
 
+fun isSeverityValid(severity: String): Boolean {
+    return severity in LoggingMsgSeverity.entries.map { it.name }
+}
+fun isTimestampValid(timestamp: String?): Boolean {
+    try {
+        if (timestamp.isNullOrEmpty()) return false
+        //The purpose of this next line is to throw the exception if improperly formatted
+        val longTs = timestamp.toLong()
+        return true
+    } catch (e: Exception) {
+        return false
+    }
+}
 
-        /*
-         post<List<LogEntry>>(path = "/log") {
-             Json.decodeFromString<Message>(messageString)
-             val result = call.receive<>()
-         }
-          */
+
+//         post<List<LogEntry>>(path = "/log2") {
+//             Json.decodeFromString<Message>(messageString)
+//             val result = call.receive<>()
+//         }
+
 
         //use coroutines
 //        get("/data") {
@@ -116,18 +151,5 @@ fun Application.configureRouting() {
 //            call.respondText("Customer stored correctly", status = HttpStatusCode.Created)
 //        }
 
-    }
-}
 
-fun isSeverityValid(severity: String): Boolean {
-    return severity in LoggingMsgSeverity.entries.map { it.name }
-}
-fun isTimestampValid(timestamp: String?): Boolean {
-   try {
-       if (timestamp.isNullOrEmpty()) return false
-       val longTs = timestamp.toLong()
-       return true
-   } catch (e: Exception) {
-       return false
-   }
-}
+

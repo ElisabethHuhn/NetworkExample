@@ -17,11 +17,13 @@ import io.ktor.server.routing.routing
 // Authentication and authorization https://ktor.io/docs/server-auth.html
 // CORS https://ktor.io/docs/server-cors.html
 
+
+
 fun main() {
     embeddedServer(
         factory = Netty,
         port = SERVER_PORT,
-        host = LOGGER_HOST,
+        host = BASE_URL,
         module = Application::module
     )
         .start(wait = true)

@@ -4,11 +4,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.elisabethhuhn.networkexample.logger.domain.LogEntry
-import org.elisabethhuhn.networkexample.logger.domain.LogEntryBuffer
 import org.elisabethhuhn.networkexample.log.presentation.LogClientState
 import org.elisabethhuhn.networkexample.log.data.network.LoggingClient
-import org.elisabethhuhn.networkexample.logger.domain.LoggingMsgSeverity
 import org.elisabethhuhn.networkexample.util.formatCurrentTimestamp
 import org.elisabethhuhn.networkexample.util.onError
 import org.elisabethhuhn.networkexample.util.onSuccess

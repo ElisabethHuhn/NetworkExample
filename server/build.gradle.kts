@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.kotlinJvm)//assume server is on jvm
     alias(libs.plugins.ktor)
 //    alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.kotlin.serialization)
+//    alias(libs.plugins.kotlin.plugin.serialization)
     application
 }
 
@@ -21,8 +21,8 @@ dependencies {
 
 //    implementation(libs.ktor.server.request.validation)
 
-
-//    testImplementation(libs.ktor.server.tests)
+    testImplementation(libs.ktor.server.tests)
     testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.kotlin.test)
     testImplementation(libs.kotlin.test.junit)
 }

@@ -36,7 +36,8 @@ The main purpose of this project is to gain experience:
 
 ## Ktor Client Calls
 
-![Kotlin Ktor Client Calls](images/ktor_client_calls.png)
+![Kotlin Generic Ktor Client Calls](images/Ktor_Generic_Client_Calls.png)
+![Kotlin Specific Ktor Client Calls](images/Ktor_Specific_Client_Calls.png)
 
 # Requirements
 * Include a logger module that can be reused in other projects

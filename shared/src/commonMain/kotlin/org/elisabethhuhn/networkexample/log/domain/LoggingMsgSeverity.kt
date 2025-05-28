@@ -1,4 +1,4 @@
-package org.elisabethhuhn.networkexample.logger.domain
+package org.elisabethhuhn.networkexample.log.domain
 
 enum class LoggingMsgSeverity {
     DEBUG,

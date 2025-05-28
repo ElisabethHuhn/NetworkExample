@@ -1,4 +1,4 @@
-package org.elisabethhuhn.networkexample.logger.data
+package org.elisabethhuhn.networkexample.log.data
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

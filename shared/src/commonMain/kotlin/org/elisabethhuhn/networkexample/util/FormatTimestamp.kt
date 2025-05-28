@@ -29,3 +29,7 @@ fun formatCurrentTimestamp() : String {
 fun getNow() : LocalDateTime {
     return Clock.System.now().toLocalDateTime(TimeZone.UTC)
 }
+
+fun getEpochMillis() : Long {
+    return Clock.System.now().toEpochMilliseconds()
+}

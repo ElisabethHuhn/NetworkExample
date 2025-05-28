@@ -1,14 +1,19 @@
 package org.elisabethhuhn.networkexample.log.presentation
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import org.elisabethhuhn.networkexample.log.domain.Logger
-import org.elisabethhuhn.networkexample.logger.domain.LoggingMsgSeverity
-import org.elisabethhuhn.networkexample.util.formatCurrentTimestamp
+import kotlinx.coroutines.launch
+import org.elisabethhuhn.networkexample.core.domain.onError
+import org.elisabethhuhn.networkexample.core.domain.onSuccess
+import org.elisabethhuhn.networkexample.log.domain.LogBusinessLogic
+import org.elisabethhuhn.networkexample.log.domain.LogEntry
 
-class LoggerViewModel () : ViewModel() {
+class LoggerViewModel (
+    private val logBusinessLogic: LogBusinessLogic
+) : ViewModel() {
 
     /* ********************************************************************
      * State values displayed in MainScreen UI
@@ -23,24 +28,23 @@ class LoggerViewModel () : ViewModel() {
      */
     fun onAction(action: LoggerAction) {
         when(action) {
-            is LoggerAction.NumberToGenerateChanged -> {
-                updateNumberToGenerate(action.number)
-            }
-            is LoggerAction.UpdateLogger -> {
-                updateLogger(action.logger)
-            }
-            is LoggerAction.IncrLogCounter -> {
-                incrLogCounter()
-            }
-            is LoggerAction.SetCurrentTimestamp -> {
-                updateTimestamp()
-            }
             is LoggerAction.UpdateLoggerBufferLength -> {
                 updateLoggerBufferLength(action.lengthString)
             }
             is LoggerAction.UpdateLoggerBufferDuration -> {
                 updateLoggerBufferDuration(action.durationString)
             }
+            is LoggerAction.UpdateNumberToGenerateChanged -> {
+                updateNumberToGenerate(action.number)
+            }
+            is LoggerAction.GenerateLogMessages -> {
+                generateLogMessages()
+            }
+            is LoggerAction.FlushLogBuffer -> {
+                flushLogBuffer()
+            }
+
+            else -> {}
         }
     }
 
@@ -49,20 +53,6 @@ class LoggerViewModel () : ViewModel() {
      */
     fun updateIsLoading(isLoading: Boolean) {
         _state.update { it.copy(isLoading = isLoading) }
-    }
-
-    private fun updateLogger(logger: Logger) {
-        _state.update { it.copy(logger = logger) }
-    }
-
-    private fun updateTimestamp() {
-        val timestamp = formatCurrentTimestamp()
-        _state.update { it.copy(currentTimestamp = timestamp) }
-    }
-
-    private fun incrLogCounter() {
-        val newCounter = _state.value.logCounter + 1
-        _state.update { it.copy(logCounter = newCounter) }
     }
 
     private fun updateNumberToGenerate(newCounter: String) {
@@ -76,60 +66,81 @@ class LoggerViewModel () : ViewModel() {
             0
         }
         _state.update { it.copy(numberToGenerate = numberToGenerate) }
-    }
-
-    fun updateSeverity(newSeverity: LoggingMsgSeverity) {
-        _state.update { it.copy(severity = newSeverity) }
-    }
-
-    fun updateLogMessage(newMessage: String) {
-        _state.update { it.copy(message = newMessage) }
+        logBusinessLogic.setMaxBufferSize(numberToGenerate)
     }
     private fun updateLoggerBufferLength(lengthString: String) {
-        var length = 0
-        if (lengthString != "") {
+        val length = if (lengthString != "") {
             try{
-                length = lengthString.toInt()
+                lengthString.toInt()
             } catch (e: NumberFormatException) {
-                length = 0
+                0
             }
         } else {
-            length = 0
+            0
         }
-        _state.value.logger?.setBufferLength(length)
+        _state.update { it.copy(bufferLength = length) }
+        logBusinessLogic.setMaxBufferSize(length)
     }
     private fun updateLoggerBufferDuration(durationString: String) {
-        var duration = 0L
-        if (durationString != "") {
+        val duration =  if (durationString != "") {
             try{
-                duration = durationString.toLong()
+                durationString.toLong()
             } catch (e: NumberFormatException) {
-                duration = 0L
+                0L
             }
         } else {
-            duration = 0L
+            0L
         }
-        _state.value.logger?.setBufferDuration(duration)
+        _state.update { it.copy(bufferDuration = duration) }
+        logBusinessLogic.setBufferDuration(duration)
     }
 
-    /* ********************************************************************
-     * State of Logging message
-     */
-    private val _logClientState = MutableStateFlow<LogClientState>(LogClientState())
-    val loggerState = _logClientState.asStateFlow()
-
-    /*
-  * functions to update the Logging State values
-  */
-    fun updateLoggingState(loggingState: LogClientState) {
-        _logClientState.update { loggingState }
+    fun updateLastBuffered(logEntry: LogEntry) {
+        _state.update { it.copy(lastBuffered = logEntry) }
     }
+    fun updateLastSent(logEntry: LogEntry) {
+        _state.update { it.copy(lastSent = logEntry) }
+    }
+    fun updateTotalSent(number: Int) {
+        _state.update { it.copy(totalSent = number) }
+    }
+    fun updateTotalQueued(number: Int) {
+        _state.update { it.copy(totalQueued = number) }
+    }
+    fun updateTotalSuccess(number: Int) {
+        _state.update { it.copy(totalSuccess = number) }
+    }
+    fun updateTotalError(number: Int) {
+        _state.update { it.copy(totalError = number) }
+    }
+
 
 
 
     /*
      * functions to carry out the UI actions triggered by User in MainScreen UI
      */
+
+    private fun generateLogMessages() {
+        viewModelScope.launch {
+            val result =
+                logBusinessLogic.generateLogMessages(_state.value.numberToGenerate)
+
+            //todo update the state with the result
+            result.onSuccess {  }
+            result.onError {  }
+//            result.asEmptyDataResult()
+        }
+    }
+
+    private fun flushLogBuffer() {
+        viewModelScope.launch {
+            val result = logBusinessLogic.flushBuffer()
+            //todo update the state with the result
+            result.onSuccess {  }
+            result.onError {  }
+        }
+    }
 
 
 }

@@ -5,12 +5,11 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
 
-    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.plugin.serialization)
 }
 
 kotlin {
     androidTarget {
-        @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
         }
@@ -28,10 +27,8 @@ kotlin {
             // put your Multiplatform dependencies here
             implementation(libs.kotlinx.datetime)
 
-            implementation(libs.bundles.ktor.client)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.kotlinx.serialization.json)
-
 
             api(libs.koin.core)
         }

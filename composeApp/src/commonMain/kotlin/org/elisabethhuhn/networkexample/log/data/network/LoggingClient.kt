@@ -1,6 +1,6 @@
 package org.elisabethhuhn.networkexample.log.data.network
 
-import org.elisabethhuhn.networkexample.logger.domain.LogEntry
+import org.elisabethhuhn.networkexample.log.domain.LogEntry
 import io.ktor.client.HttpClient
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody

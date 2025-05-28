@@ -1,15 +1,29 @@
 package org.elisabethhuhn.networkexample.log.presentation
 
-import org.elisabethhuhn.networkexample.log.domain.Logger
-import org.elisabethhuhn.networkexample.logger.domain.LoggingMsgSeverity
+import org.elisabethhuhn.networkexample.log.domain.LogEntry
+import org.elisabethhuhn.networkexample.log.domain.LoggingMsgSeverity
 
 data class LoggerState(
     val isLoading: Boolean = true,
-    val logger: Logger? = null,
-    val currentTimestamp: String = "NO TIMESTAMP YET",
-    val logCounter: Int = 0,
+
+    val bufferLength: Int = 1,
+    val bufferDuration: Long = 1000L, // 1 second
     val numberToGenerate: Int = 1,
-    val severity: LoggingMsgSeverity = LoggingMsgSeverity.NOT_ASSIGNED,
-    val message: String = "NO MESSAGE YET",
-    val logClientState: LogClientState = LogClientState()
+
+    val lastBuffered : LogEntry = LogEntry(
+        message = "NO MESSAGE YET",
+        timestamp = "NO TIMESTAMP YET",
+        severity = LoggingMsgSeverity.NOT_ASSIGNED
+    ),
+    val lastSent : LogEntry = LogEntry(
+        message = "NO MESSAGE YET",
+        timestamp = "NO TIMESTAMP YET",
+        severity = LoggingMsgSeverity.NOT_ASSIGNED
+    ),
+
+    val totalSent : Int = 0,
+    val totalQueued : Int = 0,
+    val totalSuccess: Int = 0,
+    val totalError : Int = 0
+
 )
